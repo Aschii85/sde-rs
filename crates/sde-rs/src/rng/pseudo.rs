@@ -1,6 +1,7 @@
 use crate::rng::{BaseRng, StepCache};
 use rand::{Rng as RandRng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use std::error::Error;
 
 // --- Pseudo RNG ---
 
@@ -32,29 +33,25 @@ impl PseudoRng {
 }
 
 impl BaseRng for PseudoRng {
-    fn sample(&mut self, time_idx: usize, increment_idx: usize) -> f64 {
-        let is_cached = self
+    fn sample(
+        &mut self,
+        time_idx: usize,
+        increment_idx: usize,
+    ) -> Result<f64, Box<dyn Error + Send + Sync>> {
+        match self
             .last_step
             .as_ref()
-            .is_some_and(|c| c.time_idx == Some(time_idx));
-
-        if !is_cached {
-            self.refresh_cache(time_idx);
+            .is_some_and(|c| c.time_idx == Some(time_idx))
+        {
+            true => {}
+            false => self.refresh_cache(time_idx),
+        };
+        match self.last_step.as_ref() {
+            Some(cache) => {
+                let val = *cache.values.get(increment_idx).ok_or("value not found")?;
+                Ok(val)
+            }
+            None => Err("cache not created".into()),
         }
-
-        // CHANGE THIS: Don't return 0.0. Panic or return a clear error.
-        // Returning 0.0 here kills the variance of your simulation silently.
-        *self
-            .last_step
-            .as_ref()
-            .unwrap()
-            .values
-            .get(increment_idx)
-            .unwrap_or_else(|| {
-                panic!(
-                    "RNG Index {} out of bounds (max {})",
-                    increment_idx, self.num_increments
-                )
-            })
     }
 }

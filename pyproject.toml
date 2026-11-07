@@ -3,7 +3,7 @@ requires = ["maturin>=1.9,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "sde-sim-rs"
+name = "sde-rs"
 dynamic = ["version"]
 description = "Powerful and flexible SDE simulation library with Rust-accelerated Monte-Carlo"
 readme = "README.md"
@@ -12,7 +12,6 @@ requires-python = ">=3.10,<4.0"
 authors = [
     {name = "Alexander Schierbeck-Hansen", email = "aschii85@protonmail.com"},
 ]
-# Metadata that helps PyPI users find your library
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Rust",
@@ -20,25 +19,23 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-    "polars>=1.8.2",
-    "numpy>=1.24.4",
-    "plotly>=6.6.0",
+    "numpy>=2.2.6",
+    "xarray>=2025.6.1",
 ]
 
 [tool.maturin]
-# Use 'python' feature to trigger the abi3 and extension-module logic we set in Cargo.toml
-features = ["python"]
+manifest-path = "crates/sde-rs-py/Cargo.toml"
+features = ["pyo3/extension-module"]
 python-source = "python"
-module-name = "sde_sim_rs.sde_sim_rs" # Defines Rust as a submodule
-# Maturin automatically includes .pyi and py.typed if they are in the python-source
-include = ["python/sde_sim_rs/py.typed"]
+module-name = "sde_rs._core" # Rust submodule location
 
 [tool.uv]
-# 2026 UV Power-move: Automatically rebuild the Rust code when .rs files change
+# rebuild when the Rust sources change
 cache-keys = [
-    { file = "Cargo.toml" },
     { file = "pyproject.toml" },
-    { file = "src/**/*.rs" }
+    { file = "Cargo.toml" },
+    { file = "Cargo.lock" },
+    { file = "crates/**/*.rs" },
 ]
 
 [dependency-groups]
@@ -46,4 +43,6 @@ dev = [
     "pytest>=8.0.0",
     "ruff>=0.12.7",
     "maturin>=1.9.0",
+    "pandas>=2.3.3",
+    "plotly>=6.6.0",
 ]

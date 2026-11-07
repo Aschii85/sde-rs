@@ -78,6 +78,5 @@ uv.lock
 # Performance profiling
 *.prof
 perf.data*
-
-# Include src bin directory
-!src/bin
+*profile*
+flamegraph.svg

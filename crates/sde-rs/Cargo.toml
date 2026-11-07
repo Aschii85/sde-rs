@@ -1,0 +1,29 @@
+[package]
+name = "sde-rs"
+description = "Powerful and flexible stochastic differential equation (quasi) Monte-Carlo simulation library written in Rust with Python bindings"
+readme = "../../README.md"
+keywords = ["sde", "monte-carlo", "simulation", "stochastic", "rqmc"]
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+fasteval = "0.2.4"
+itertools = "0.15.0"
+ordered-float = { version = "4.2", default-features = false }
+polars = { version = "0.55.2", optional = true, default-features = false, features = ["lazy", "fmt", "dtype-categorical"] }
+rand = "0.9.3"
+rand_chacha = "0.9.0"
+rayon = "1.12.0"
+regex = { version = "1.11.1", default-features = false, features = ["std", "unicode"] }
+sobol = "1.0.2"
+zarrs = { version = "0.23.14", optional = true }
+zarrs_filesystem = { version = "0.3.14", optional = true }
+
+
+[features]
+default = []
+polars = ["dep:polars"]
+zarrs = ["dep:zarrs", "dep:zarrs_filesystem"]

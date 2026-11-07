@@ -1,16 +1,25 @@
 from collections.abc import Mapping, Sequence
-from typing import Literal
+from typing import Annotated, Literal
 
-import polars as pl
+import xarray
+
+from ._core import _simulate
+
+__all__ = ["simulate"]
+
+
+SimulationResult = Annotated[xarray.DataArray, "scenario time process"]
+"""Dims: (scenario, time, process)."""
+
 
 def simulate(
     processes_equations: Sequence[str],
     time_steps: Sequence[float],
-    scenarios: int,
+    number_scenarios: int,
     initial_values: Mapping[str, float],
     rng_method: Literal["pseudo", "sobol"] = "pseudo",
     scheme: Literal["euler", "runge-kutta"] = "euler",
-) -> pl.DataFrame:
+) -> SimulationResult:
     """
     Simulates stochastic differential equations (SDEs) using the specified methods.
 
@@ -54,4 +63,20 @@ def simulate(
         ValueError: If the process equations are malformed or if initial values
             are missing for any process.
     """
-    ...
+    result, scenarios, times, procs = _simulate(
+        processes_equations,
+        time_steps,
+        number_scenarios,
+        initial_values,
+        rng_method,
+        scheme,
+    )
+    return xarray.DataArray(
+        result,
+        dims=["scenario", "time", "process"],
+        coords={
+            "scenario": scenarios,
+            "time": times,
+            "process": procs,
+        },
+    )

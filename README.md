@@ -1,8 +1,8 @@
-# sde-sim-rs: Flexible stochastic differential equation simulation library written in Rust
+# sde-rs: Flexible stochastic differential equation simulation library written in Rust
 
-[![Release PyPi](https://github.com/Aschii85/sde-sim-rs/actions/workflows/Release%20PyPi.yml/badge.svg)](https://github.com/Aschii85/sde-sim-rs/actions/workflows/Release%20PyPi.yml) [![Release Crate](https://github.com/Aschii85/sde-sim-rs/actions/workflows/Release%20Crates.yml/badge.svg)](https://github.com/Aschii85/sde-sim-rs/actions/workflows/Release%20Crates.yml)
+[![Release PyPi](https://github.com/Aschii85/sde-rs/actions/workflows/Release%20PyPi.yml/badge.svg)](https://github.com/Aschii85/sde-rs/actions/workflows/Release%20PyPi.yml) [![Release Crate](https://github.com/Aschii85/sde-rs/actions/workflows/Release%20Crates.yml/badge.svg)](https://github.com/Aschii85/sde-rs/actions/workflows/Release%20Crates.yml)
 
-`sde-sim-rs` is a high-performance library for simulating stochastic differential equations (SDEs), which are foundational in fields like quantitative finance, physics, and biology. By leveraging the speed and memory safety of Rust, the project provides a fast and flexible core while offering seamless bindings for use in Python and Rust. This project is ideal for researchers, data scientists, and developers who need to run complex SDE using Monte-Carlo and quasi Monte-Carlo simulations with remarkable efficiency and reliability, while bridge the gap between high-performance compiled languages and the scientific computing ecosystem of Python.
+`sde-rs` is a high-performance library for simulating stochastic differential equations (SDEs), which are foundational in fields like quantitative finance, physics, and biology. By leveraging the speed and memory safety of Rust, the project provides a fast and flexible core while offering seamless bindings for use in Python and Rust. This project is ideal for researchers, data scientists, and developers who need to run complex SDE using Monte-Carlo and quasi Monte-Carlo simulations with remarkable efficiency and reliability, while bridge the gap between high-performance compiled languages and the scientific computing ecosystem of Python.
 
 ## Features
 
@@ -21,10 +21,10 @@
 
 ### Python
 
-Install the latest `sde-sim-rs` version with:
+Install the latest `sde-rs` version with:
 
 ```
-pip install sde-sim-rs
+pip install sde-rs
 ```
 
 Requires Python version >=3.11,<3.15.
@@ -46,15 +46,15 @@ uv run examples/example.py
 You can take latest release from crates.io, or if you want to use the latest features / performance improvements point to the main branch of this repo.
 
 ```
-sde-sim-rs = { git = "https://github.com/Aschii85/sde-sim-rs", rev = "<optional git tag>" }
+sde-rs = { git = "https://github.com/Aschii85/sde-rs", rev = "<optional git tag>" }
 ```
 
-An example file for using the crate can be found in `examples/example.rs`, which can be run using `cargo run -r --example example`.
+An example file for using the crate can be found in `crates/sde-rs/examples/simulation.rs`, which can be run using `cargo run -p sde-rs -r --example simulation`.
 
 ### Links
 
-- **PyPI:** [Find the Python package here](https://pypi.org/project/sde-sim-rs/)
-- **Crates.io:** [Get the Rust crate here](https://crates.io/crates/sde-sim-rs)
+- **PyPI:** [Find the Python package here](https://pypi.org/project/sde-rs/)
+- **Crates.io:** [Get the Rust crate here](https://crates.io/crates/sde-rs)
 
 ## Contributing
 
