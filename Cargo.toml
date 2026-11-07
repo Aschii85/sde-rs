@@ -1,40 +1,17 @@
-[package]
-name = "sde-sim-rs"
-version = "0.5.1"
+[workspace]
+members = ["crates/sde-rs", "crates/sde-rs-py"]
+resolver = "3"
+
+[workspace.package]
+version = "1.0.0"
 edition = "2024"
 authors = ["Alexander Schierbeck-Hansen <aschii85@protonmail.com>"]
-description = "Powerful and flexible stochastic differential equation (quasi) Monte-Carlo simulation library written in Rust with Python bindings"
-readme = "README.md"
-repository = "https://github.com/Aschii85/sde-sim-rs"
+repository = "https://github.com/Aschii85/sde-rs"
 license = "MIT"
-keywords = ["sde", "monte-carlo", "simulation", "stochastic", "rqmc"]
 
-[lib]
-name = "sde_sim_rs"
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-fasteval = "0.2.4"
-lazy_static = "1.5.0"
-lru = "0.16.3"
-nom = "8.0.0"
-ordered-float = "4.2"
-polars = { version = "0.51.0", features = ["diagonal_concat", "lazy"] }
-pyo3 = { version = "0.25.1", features = ["auto-initialize"], optional = true }
-pyo3-polars = { version = "0.24.0", optional = true }
-rand = "0.9.2"
-rand_chacha = "0.9.0"
-rayon = "1.11.0"
-regex = "1.11.1"
-sobol = "1.0.2"
-
-[features]
-default = []
-# Updated: pyo3-polars/abi3 removed, it's not needed as a separate flag
-python = [
-    "dep:pyo3", 
-    "dep:pyo3-polars", 
-    "pyo3/extension-module", 
-    "pyo3/abi3-py310" ,
-    "pyo3/generate-import-lib"
-]
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"      # see warning below
+strip = false

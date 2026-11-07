@@ -54,8 +54,13 @@ impl SobolRng {
 }
 
 impl BaseRng for SobolRng {
-    fn sample(&mut self, time_idx: usize, increment_idx: usize) -> f64 {
-        self.values[time_idx * self.num_increments + increment_idx]
+    fn sample(
+        &mut self,
+        time_idx: usize,
+        increment_idx: usize,
+    ) -> Result<f64, Box<dyn std::error::Error + Send + Sync>> {
+        let val = self.values[time_idx * self.num_increments + increment_idx];
+        Ok(val)
     }
 }
 

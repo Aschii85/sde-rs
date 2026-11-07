@@ -1,0 +1,17 @@
+[package]
+name = "sde-rs-py"
+publish = false
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+ordered-float = { version = "4.2", default-features = false }
+numpy = "0.30.0"
+pyo3 = { version = "0.30.1", features = ["abi3-py310", "generate-import-lib"] }
+rayon = "1.12.0"
+sde-rs = { path = "../sde-rs" }

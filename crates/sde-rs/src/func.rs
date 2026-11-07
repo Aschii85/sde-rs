@@ -1,6 +1,6 @@
-use crate::filtration::ScenarioFiltration;
+use crate::filtration::{ScenarioFiltration, TimeStep};
+
 use fasteval::{Compiler, Evaler, Instruction, Slab};
-use ordered_float::OrderedFloat;
 
 pub struct Function {
     instruction: Instruction,
@@ -31,13 +31,15 @@ impl Function {
 
     pub fn eval(
         &self,
-        t: OrderedFloat<f64>,
+        time_step: &TimeStep,
         filtration: &mut ScenarioFiltration,
     ) -> Result<f64, fasteval::Error> {
-        if t != filtration.cache.time {
-            filtration.refresh_cache(t);
+        if time_step != filtration.cache_time_step() {
+            match filtration.refresh_cache(time_step) {
+                Ok(_) => {}
+                Err(_) => {}
+            };
         }
-        self.instruction
-            .eval(&self.slab, &mut filtration.cache.values)
+        self.instruction.eval(&self.slab, filtration.cache_values())
     }
 }
