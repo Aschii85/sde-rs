@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-   linux:
+  linux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -54,7 +54,7 @@ jobs:
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
           path: dist
-
+       
   windows:
     runs-on: windows-latest
     strategy:
