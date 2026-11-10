@@ -1,9 +1,9 @@
-use crate::scheme::{euler::euler_iteration, runge_kutta::runge_kutta_iteration};
 use crate::{
     filtration::{ScenarioFiltration, TimeStep, TimeStepContainer},
+    iteration::{IterationScheme, euler::euler_iteration, runge_kutta::runge_kutta_iteration},
     process::ProcessUniverse,
     rng::{
-        BaseRng,
+        BaseRng, RngMethod,
         pseudo::PseudoRng,
         sobol::{SobolEngine, SobolRng},
     },
@@ -29,14 +29,14 @@ pub struct SimulationRng {
 
 impl SimulationRng {
     pub fn new(
-        method: &str,
+        scheme: RngMethod,
         num_incrementors: usize,
         num_time_steps: usize,
         seed: Option<u64>,
     ) -> Self {
-        // shared Sobol engine (only used when rng_method == "sobol")
-        let sobol_engine: Option<Arc<Mutex<SobolEngine>>> = match method {
-            "sobol" => {
+        // shared Sobol engine
+        let sobol_engine: Option<Arc<Mutex<SobolEngine>>> = match scheme {
+            RngMethod::Sobol => {
                 let sobol_dims = (num_time_steps - 1) * num_incrementors;
                 Some(Arc::new(Mutex::new(SobolEngine::new(sobol_dims))))
             }
@@ -96,17 +96,16 @@ impl Simulation {
         times: Vec<OrderedFloat<f64>>,
         scenarios: Vec<u64>,
         initial_values: HashMap<String, f64>,
-        scheme: &str,
-        rng_method: &str,
+        iteration_scheme: IterationScheme,
+        rng_method: RngMethod,
         rng_seed: Option<u64>,
     ) -> Self {
         let time_steps = TimeStepContainer::new(times);
         let mut sorted_scenarios = scenarios;
         sorted_scenarios.sort();
-        let iteration = match scheme {
-            "euler" => euler_iteration,
-            "runge_kutta" => runge_kutta_iteration,
-            _ => unimplemented!(),
+        let iteration = match iteration_scheme {
+            IterationScheme::Euler => euler_iteration,
+            IterationScheme::RungeKutta => runge_kutta_iteration,
         };
         let rng = SimulationRng::new(
             rng_method,

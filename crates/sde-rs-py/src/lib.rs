@@ -1,4 +1,5 @@
 use ::sde_rs::{parser::parse_equations, simulation::Simulation};
+use sde_rs::{iteration::IterationScheme, rng::RngMethod};
 
 use numpy::{PyArray1, PyArray3, PyArrayMethods};
 use ordered_float::OrderedFloat;
@@ -25,15 +26,15 @@ enum Outcome {
 
 #[pyfunction]
 #[pyo3(name = "_simulate")]
-#[pyo3(signature = (processes_equations, time_steps, number_scenarios, initial_values, rng_method, scheme, rng_seed=None))]
+#[pyo3(signature = (processes_equations, time_steps, number_scenarios, initial_values, *, iteration_scheme="euler".to_string(), rng_method="pseudo".to_string(), rng_seed=None))]
 pub fn simulate_py<'py>(
     py: Python<'py>,
     processes_equations: Vec<String>,
     time_steps: Vec<f64>,
     number_scenarios: i64,
     initial_values: HashMap<String, f64>,
+    iteration_scheme: String,
     rng_method: String,
-    scheme: String,
     rng_seed: Option<u64>,
 ) -> PyResult<(
     Bound<'py, PyArray3<f64>>, // (scenario, time_step, process)
@@ -57,8 +58,16 @@ pub fn simulate_py<'py>(
         time_steps.iter().copied().map(OrderedFloat).collect(),
         scenarios.clone(),
         initial_values,
-        &scheme,
-        &rng_method,
+        match iteration_scheme.as_str() {
+            "euler" => IterationScheme::Euler,
+            "runge-kutta" => IterationScheme::RungeKutta,
+            _ => unimplemented!("iteration_scheme must be 'euler' or 'rung-kutta'"),
+        },
+        match rng_method.as_str() {
+            "pseudo" => RngMethod::Pseudo,
+            "sobol" => RngMethod::Sobol,
+            _ => unimplemented!("rng_method must be 'pseudo' or 'sobol'"),
+        },
         rng_seed,
     );
     let mut simulation_result = simulation.empty_result();
