@@ -61,7 +61,7 @@ pub fn simulate_py<'py>(
         match iteration_scheme.as_str() {
             "euler" => IterationScheme::Euler,
             "runge-kutta" => IterationScheme::RungeKutta,
-            _ => unimplemented!("iteration_scheme must be 'euler' or 'rung-kutta'"),
+            _ => unimplemented!("iteration_scheme must be 'euler' or 'runge-kutta'"),
         },
         match rng_method.as_str() {
             "pseudo" => RngMethod::Pseudo,
