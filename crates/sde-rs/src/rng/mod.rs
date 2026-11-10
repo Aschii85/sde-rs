@@ -15,3 +15,8 @@ struct StepCache {
     time_idx: Option<usize>,
     values: Vec<f64>,
 }
+
+pub enum RngMethod {
+    Pseudo,
+    Sobol,
+}

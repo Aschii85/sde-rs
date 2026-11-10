@@ -1,5 +1,6 @@
-use sde_rs::parser::parse_equations;
-use sde_rs::simulation::Simulation;
+use sde_rs::{
+    iteration::IterationScheme, parser::parse_equations, rng::RngMethod, simulation::Simulation,
+};
 
 use ordered_float::OrderedFloat;
 use rayon::prelude::*;
@@ -16,8 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         "X2 = max(X1 - 100.0, 0.0)".to_string(),
     ];
 
-    let scheme = "euler"; // other valid value: "runge-kutta"
-    let rng_method = "sobol"; // other valid value: "sobol"
+    let scheme = IterationScheme::Euler; // other valid value: "runge-kutta"
+    let rng_method = RngMethod::Sobol; // other valid value: "sobol"
     let num_scenarios: u64 = 10_000;
 
     // build a uniformly spaced time vector, identical to what the Python
@@ -37,17 +38,14 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         time_steps,
         (0..num_scenarios as u64).collect(),
         initial_values,
-        &scheme,
-        &rng_method,
+        scheme,
+        rng_method,
         None,
     );
     let mut simulation_result = simulation.empty_result();
     // parallel computation of scenarios put into results vector
     let start = Instant::now();
-    println!(
-        "running {} scenarios with {} rng...",
-        num_scenarios, rng_method
-    );
+    println!("running {} scenarios...", num_scenarios);
     std::thread::scope(|s| {
         s.spawn(|| {
             simulation_result
@@ -63,19 +61,11 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 })
         });
     });
-    // let df = concat(
-    //     results
-    //         .into_iter()
-    //         .map(|x| x.to_lazyframe())
-    //         .collect::<Vec<_>>(),
-    //     UnionArgs::default(),
-    // )?
-    // .collect()?;
     let elapsed = start.elapsed();
     println!("completed in {:.3}s", elapsed.as_secs_f64());
 
-    // print a small portion of the output frame
-    // println!("{:#?}", simulation_result);
+    // print a small portion of the output
+    println!("{:#?}", simulation_result);
 
     Ok(())
 }

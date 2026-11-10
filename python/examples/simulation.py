@@ -14,8 +14,8 @@ def main():
         time_steps=list(np.arange(0.0, 10.0, 0.01)),
         number_scenarios=10_000,
         initial_values=initial_values,
+        iteration_scheme="runge-kutta",
         rng_method="pseudo",
-        scheme="euler",
     )
     print(result)
     plot_paths(result)

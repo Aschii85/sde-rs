@@ -17,8 +17,10 @@ def simulate(
     time_steps: Sequence[float],
     number_scenarios: int,
     initial_values: Mapping[str, float],
+    *,
+    iteration_scheme: Literal["euler", "runge-kutta"] = "euler",
     rng_method: Literal["pseudo", "sobol"] = "pseudo",
-    scheme: Literal["euler", "runge-kutta"] = "euler",
+    rng_seed: int | None = None,
 ) -> SimulationResult:
     """
     Simulates stochastic differential equations (SDEs) using the specified methods.
@@ -68,8 +70,9 @@ def simulate(
         time_steps,
         number_scenarios,
         initial_values,
-        rng_method,
-        scheme,
+        iteration_scheme=iteration_scheme,
+        rng_method=rng_method,
+        rng_seed=rng_seed,
     )
     return xarray.DataArray(
         result,
