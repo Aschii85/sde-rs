@@ -12,6 +12,7 @@ use crate::{
 use ordered_float::OrderedFloat;
 use std::{
     collections::HashMap,
+    fmt,
     sync::{Arc, Mutex},
 };
 
@@ -181,7 +182,6 @@ impl Simulation {
     }
 }
 
-#[derive(Debug)]
 pub struct SimulationResult {
     pub data: Vec<f64>,
     scenarios: Vec<u64>,
@@ -233,5 +233,73 @@ impl SimulationResult {
         ]
         .expect("Failed to create DataFrame")
         .lazy()
+    }
+}
+
+// Helper function using a generic type parameter instead of `impl Trait`
+fn fmt_slice<T: fmt::Debug>(
+    f: &mut fmt::Formatter<'_>,
+    slice: &[T],
+    max_elems: usize,
+) -> fmt::Result {
+    write!(f, "[")?;
+    if slice.len() <= max_elems {
+        for (i, item) in slice.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{:?}", item)?;
+        }
+    } else {
+        let half = max_elems / 2;
+        for (i, item) in slice[..half].iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{:?}", item)?;
+        }
+        write!(f, ", ..., ")?;
+        for (i, item) in slice[slice.len() - half..].iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{:?}", item)?;
+        }
+    }
+    write!(f, "]")
+}
+
+impl fmt::Debug for SimulationResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let n_scen = self.scenarios.len();
+        let n_time = self.times.len();
+        let n_proc = self.process_names.len();
+
+        writeln!(f, "<SimulationResult>")?;
+        writeln!(
+            f,
+            "  Dimensions:    (scenario: {}, time: {}, process: {})",
+            n_scen, n_time, n_proc
+        )?;
+
+        writeln!(f, "  Coordinates:")?;
+        write!(f, "    * scenario   ({} )  ", n_scen)?;
+        fmt_slice(f, &self.scenarios, 6)?;
+        writeln!(f)?;
+
+        write!(f, "    * time       ({} )  ", n_time)?;
+        fmt_slice(f, &self.times, 6)?;
+        writeln!(f)?;
+
+        write!(f, "    * process    ({} )  ", n_proc)?;
+        fmt_slice(f, &self.process_names, 6)?;
+        writeln!(f)?;
+
+        writeln!(f, "  Data variables:")?;
+        write!(f, "    data         ({} values)  ", self.data.len())?;
+        fmt_slice(f, &self.data, 6)?;
+        writeln!(f)?;
+
+        Ok(())
     }
 }
