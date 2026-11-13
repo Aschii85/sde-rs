@@ -51,8 +51,9 @@ def simulate(
             Defaults to "pseudo".
 
         scheme: The numerical integration scheme to use. Can be **"euler"** for the
-            Euler-Maruyama method or **"runge-kutta"** for a higher-order Runge-Kutta
-            method. Defaults to "euler".
+            Euler-Maruyama method or **"roberts"** for a strong order 1 Runge-Kutta
+            method due toe Roberts (https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_method_(SDE)). 
+            Defaults to "euler".
 
     Returns:
         A Polars DataFrame containing the simulated values. The DataFrame is
