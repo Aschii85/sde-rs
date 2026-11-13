@@ -18,7 +18,7 @@ def simulate(
     number_scenarios: int,
     initial_values: Mapping[str, float],
     *,
-    iteration_scheme: Literal["euler", "runge-kutta"] = "euler",
+    iteration_scheme: Literal["euler", "roberts"] = "euler",
     rng_method: Literal["pseudo", "sobol"] = "pseudo",
     rng_seed: int | None = None,
 ) -> SimulationResult:
