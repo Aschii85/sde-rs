@@ -1,9 +1,12 @@
-use crate::process::{LagType, Process, ProcessUniverse};
+use crate::{
+    process::{LagType, Process, ProcessUniverse, Variable},
+    rng::RngDraws,
+};
 
+use fasteval::EvalNamespace;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct TimeStep {
@@ -43,11 +46,19 @@ impl TimeStepContainer {
         self.time_steps.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.time_steps.is_empty()
+    }
+
     pub fn lagged(&self, time_step: &TimeStep, lag: &LagType) -> Option<&TimeStep> {
         match lag {
             LagType::Size(s) => Some(self.get_by_index(time_step.index.saturating_sub(*s))?),
             LagType::Time(t) => {
-                match self.time_steps.binary_search_by(|item| item.value.cmp(t)) {
+                let target = time_step.value - t;
+                match self
+                    .time_steps
+                    .binary_search_by(|item| item.value.cmp(&target))
+                {
                     Ok(idx) => Some(&self.time_steps[idx]), // Exact match found
                     Err(idx) => {
                         // idx is where the target would be inserted.
@@ -59,7 +70,7 @@ impl TimeStepContainer {
                             _ => {
                                 let prev = self.time_steps[idx - 1];
                                 let next = self.time_steps[idx];
-                                if (t - prev.value).abs() <= (next.value - t).abs() {
+                                if (target - prev.value).abs() <= (next.value - target).abs() {
                                     Some(&self.time_steps[idx - 1])
                                 } else {
                                     Some(&self.time_steps[idx])
@@ -73,105 +84,101 @@ impl TimeStepContainer {
     }
 }
 
-pub struct ScenarioFiltrationCache {
-    pub time_step: TimeStep,
-    pub values: BTreeMap<String, f64>,
-}
-
-pub struct ScenarioFiltration<'a> {
+pub struct Filtration<'a> {
     raw_data: &'a mut [f64],
-    time_steps: TimeStepContainer,
     process_universe: Arc<ProcessUniverse>,
-    cache: ScenarioFiltrationCache,
+    time_steps: TimeStepContainer,
+    rng_draws: RngDraws,
 }
 
-impl<'a> ScenarioFiltration<'a> {
+impl<'a> Filtration<'a> {
     pub fn new(
         raw_data: &'a mut [f64],
-        process_universe: &Arc<ProcessUniverse>,
+        process_universe: Arc<ProcessUniverse>,
         time_steps: TimeStepContainer,
         initial_values: &HashMap<String, f64>,
+        rng_draws: RngDraws,
     ) -> Self {
-        let initial_time_step = time_steps.get_by_index(0).unwrap().clone();
+        let initial_time_step = *time_steps.get_by_index(0).unwrap();
+        let process_universe_pointer = Arc::clone(&process_universe);
         for process in process_universe.processes() {
             let idx = process.index;
             if let Some(initial_value) = initial_values.get(&process.name) {
                 raw_data[idx] = *initial_value;
             };
         }
-        // Use BTreeMap directly for fasteval evaluation
-        let cache = ScenarioFiltrationCache {
-            time_step: initial_time_step.clone(),
-            values: BTreeMap::new(),
-        };
-        let mut scenario_filtration = Self {
+        let mut filtration = Self {
             raw_data,
+            process_universe,
             time_steps,
-            process_universe: Arc::clone(process_universe),
-            cache,
+            rng_draws,
         };
-        scenario_filtration
-            .refresh_cache(&initial_time_step)
-            .unwrap();
-        scenario_filtration
+        for alg_process in process_universe_pointer.algebraic_processes() {
+            let mut value = 0.0;
+            for term in alg_process.terms.iter() {
+                value += term
+                    .coefficient
+                    .eval(&initial_time_step, &mut filtration)
+                    .unwrap();
+            }
+            filtration.set(&initial_time_step, alg_process, value);
+        }
+        filtration
     }
 
+    #[inline]
     pub fn get(&self, time_step: &TimeStep, process: &Process) -> f64 {
         let n_procs = self.process_universe.num_processes();
         let idx = time_step.index * n_procs + process.index;
         self.raw_data[idx]
     }
 
+    #[inline]
     pub fn set(&mut self, time_step: &TimeStep, process: &Process, val: f64) {
         let n_procs = self.process_universe.num_processes();
         let idx = time_step.index * n_procs + process.index;
         self.raw_data[idx] = val;
     }
 
-    pub fn cache_values(&mut self) -> &mut BTreeMap<String, f64> {
-        &mut self.cache.values
+    #[inline]
+    pub fn rng_draw(&self, time_step: &TimeStep, incremtor_index: usize) -> f64 {
+        self.rng_draws.get(time_step.index, incremtor_index)
     }
 
-    pub fn cache_time_step(&self) -> &TimeStep {
-        &self.cache.time_step
+    pub fn rng_seed(&self) -> u64 {
+        self.rng_draws.seed
     }
 
-    pub fn refresh_cache(
-        &mut self,
-        time_step: &TimeStep,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // Get current (and lagged) process values and insert into BTreeMap efficiently
-        for process in self.process_universe.processes() {
-            let value = self.get(time_step, process);
-            if let Some(val) = self.cache.values.get_mut(process.name.as_str()) {
-                *val = value;
-            } else {
-                self.cache.values.insert(process.name.clone(), value);
-            }
-            for lag in process.lags.iter() {
-                let value = self.get(
-                    self.time_steps
-                        .lagged(time_step, &lag.value)
-                        .ok_or("Could not get lagged value")?,
-                    process,
-                );
-                if let Some(val) = self.cache.values.get_mut(lag.process_name.as_str()) {
-                    *val = value;
-                } else {
-                    self.cache.values.insert(lag.process_name.clone(), value);
-                }
-            }
+    pub fn at(&mut self, time_step: &TimeStep) -> State<'_, 'a> {
+        State {
+            time_step: *time_step,
+            filtration: self,
         }
-        // Update the current time step
-        self.cache.time_step = time_step.clone();
-        // Update time variable for fasteval
-        if let Some(val) = self.cache.values.get_mut("t") {
-            *val = time_step.value.into_inner();
-        } else {
-            self.cache
-                .values
-                .insert("t".to_string(), time_step.value.into_inner());
+    }
+}
+
+pub struct State<'f, 'a> {
+    time_step: TimeStep,
+    filtration: &'f mut Filtration<'a>,
+}
+
+impl EvalNamespace for State<'_, '_> {
+    fn lookup(&mut self, name: &str, _args: Vec<f64>, _keybuf: &mut String) -> Option<f64> {
+        match name {
+            "t" => Some(self.time_step.value.into_inner()),
+            _ => match self.filtration.process_universe.get_variable(name) {
+                Some(var) => match var {
+                    Variable::Current(process) => {
+                        Some(self.filtration.get(&self.time_step, process))
+                    }
+                    Variable::Lagged { process, lag } => {
+                        let lagged_time_step =
+                            self.filtration.time_steps.lagged(&self.time_step, lag)?;
+                        Some(self.filtration.get(lagged_time_step, process))
+                    }
+                },
+                None => None,
+            },
         }
-        Ok(())
     }
 }

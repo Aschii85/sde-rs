@@ -1,4 +1,4 @@
-use crate::filtration::{ScenarioFiltration, TimeStep};
+use crate::filtration::{Filtration, TimeStep};
 
 use fasteval::{Compiler, Evaler, Instruction, Slab};
 
@@ -32,14 +32,9 @@ impl Function {
     pub fn eval(
         &self,
         time_step: &TimeStep,
-        filtration: &mut ScenarioFiltration,
+        filtration: &mut Filtration,
     ) -> Result<f64, fasteval::Error> {
-        if time_step != filtration.cache_time_step() {
-            match filtration.refresh_cache(time_step) {
-                Ok(_) => {}
-                Err(_) => {}
-            };
-        }
-        self.instruction.eval(&self.slab, filtration.cache_values())
+        let mut state = filtration.at(time_step);
+        self.instruction.eval(&self.slab, &mut state)
     }
 }

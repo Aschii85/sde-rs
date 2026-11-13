@@ -1,78 +1,15 @@
 use crate::{
-    filtration::{ScenarioFiltration, TimeStep, TimeStepContainer},
-    iteration::{IterationScheme, euler::euler_iteration, runge_kutta::runge_kutta_iteration},
+    filtration::{Filtration, TimeStep, TimeStepContainer},
+    iteration::{IterationScheme, euler::euler_iteration, roberts::roberts_iteration},
     process::ProcessUniverse,
-    rng::{
-        BaseRng, RngMethod,
-        pseudo::PseudoRng,
-        sobol::{SobolEngine, SobolRng},
-    },
+    rng::{RngMethod, SimulationRng},
 };
 
 use ordered_float::OrderedFloat;
-use std::{
-    collections::HashMap,
-    fmt,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 #[cfg(feature = "polars")]
 use polars::prelude::{IntoLazy, *};
-
-#[derive(Clone)]
-pub struct SimulationRng {
-    pub random_seed: u64,
-    num_incrementors: usize,
-    num_time_steps: usize,
-    sobol_engine: Option<Arc<Mutex<SobolEngine>>>,
-}
-
-impl SimulationRng {
-    pub fn new(
-        scheme: RngMethod,
-        num_incrementors: usize,
-        num_time_steps: usize,
-        seed: Option<u64>,
-    ) -> Self {
-        // shared Sobol engine
-        let sobol_engine: Option<Arc<Mutex<SobolEngine>>> = match scheme {
-            RngMethod::Sobol => {
-                let sobol_dims = (num_time_steps - 1) * num_incrementors;
-                Some(Arc::new(Mutex::new(SobolEngine::new(sobol_dims))))
-            }
-            _ => None,
-        };
-        let random_seed = match seed {
-            Some(s) => s,
-            None => rand::random(),
-        };
-        Self {
-            random_seed,
-            num_incrementors,
-            num_time_steps,
-            sobol_engine,
-        }
-    }
-
-    pub fn create(&self, scenario: u64) -> Box<dyn BaseRng> {
-        match self.sobol_engine {
-            Some(_) => Box::new(SobolRng::new(
-                scenario + self.random_seed,
-                Arc::clone(
-                    self.sobol_engine
-                        .as_ref()
-                        .expect("Sobol engine not initialized"),
-                ),
-                self.num_incrementors,
-                self.num_time_steps,
-            )),
-            _ => Box::new(PseudoRng::new(
-                scenario + self.random_seed,
-                self.num_incrementors,
-            )),
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct Simulation {
@@ -81,11 +18,10 @@ pub struct Simulation {
     pub scenarios: Vec<u64>,
     pub initial_values: HashMap<String, f64>,
     iteration: fn(
-        &mut ScenarioFiltration,
+        &mut Filtration,
         &ProcessUniverse,
         &TimeStep,
         &TimeStep,
-        &mut dyn BaseRng,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>,
     rng: SimulationRng,
 }
@@ -105,11 +41,11 @@ impl Simulation {
         sorted_scenarios.sort();
         let iteration = match iteration_scheme {
             IterationScheme::Euler => euler_iteration,
-            IterationScheme::RungeKutta => runge_kutta_iteration,
+            IterationScheme::Roberts => roberts_iteration,
         };
         let rng = SimulationRng::new(
             rng_method,
-            process_universe.num_incrementors(),
+            process_universe.num_random_incrementors(),
             time_steps.len(),
             rng_seed,
         );
@@ -133,7 +69,7 @@ impl Simulation {
         SimulationResult {
             data,
             scenarios: self.scenarios.clone(),
-            times: self.time_steps.iter().map(|t| t.value.clone()).collect(),
+            times: self.time_steps.iter().map(|t| t.value).collect(),
             process_names: self
                 .process_universe
                 .processes()
@@ -150,32 +86,25 @@ impl Simulation {
         if self.scenarios.binary_search(&scenario).is_err() {
             return Err("scenario not in simulation config".into());
         }
-        // every scenario gets its own RNG instance
-        // build a fresh filtration for this scenario with its own buffer
-        let mut rng = self.rng.create(scenario);
-        let mut filtration = ScenarioFiltration::new(
+        let mut filtration = Filtration::new(
             raw_data,
-            &self.process_universe,
+            self.process_universe.clone(),
             self.time_steps.clone(),
             &self.initial_values,
+            self.rng.draw(scenario),
         );
         let mut current_time_step = self
             .time_steps
             .get_by_index(0)
             .ok_or("no initial time step")?;
-        loop {
-            if let Some(next_time_step) = self.time_steps.next(current_time_step) {
-                (self.iteration)(
-                    &mut filtration,
-                    &self.process_universe,
-                    current_time_step,
-                    next_time_step,
-                    rng.as_mut(),
-                )?;
-                current_time_step = next_time_step;
-            } else {
-                break;
-            }
+        while let Some(next_time_step) = self.time_steps.next(current_time_step) {
+            (self.iteration)(
+                &mut filtration,
+                &self.process_universe,
+                current_time_step,
+                next_time_step,
+            )?;
+            current_time_step = next_time_step;
         }
         Ok(())
     }
@@ -203,17 +132,19 @@ impl SimulationResult {
 
     #[cfg(feature = "polars")]
     pub fn to_lazyframe(self) -> LazyFrame {
-        let scenarios = UInt32Chunked::from_iter_values(
+        let scenarios = UInt64Chunked::from_iter_values(
             PlSmallStr::from("scenario"),
-            self.scenarios.iter().flat_map(|&s| {
-                std::iter::repeat_n(s as u32, self.process_names.len() * self.times.len())
-            }),
+            self.scenarios
+                .iter()
+                .flat_map(|&s| std::iter::repeat_n(s, self.process_names.len() * self.times.len())),
         );
         let times = Float64Chunked::from_iter_values(
             PlSmallStr::from("time"),
-            self.times
-                .iter()
-                .flat_map(|time| std::iter::repeat_n(time.into_inner(), self.process_names.len())),
+            (0..self.scenarios.len()).flat_map(|_| {
+                self.times
+                    .iter()
+                    .flat_map(|t| std::iter::repeat_n(t.into_inner(), self.process_names.len()))
+            }),
         );
         let process_names = CategoricalChunked::<Categorical32Type>::from_str_iter(
             PlSmallStr::from("process_name"),
