@@ -1,7 +1,7 @@
 pub mod euler;
-pub mod runge_kutta;
+pub mod roberts;
 
 pub enum IterationScheme {
     Euler,
-    RungeKutta,
+    Roberts,
 }
