@@ -1,3 +1,4 @@
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from sde_rs import SimulationResult
@@ -20,7 +21,11 @@ def plot_paths(result: SimulationResult, n_scenarios: int = 10):
         fig.show()
 
 
-def plot_mean(result: SimulationResult, band: tuple[float, float] = (0.05, 0.95)):
+def plot_mean(
+    result: SimulationResult,
+    theoretical_mean: np.ndarray | None = None,
+    band: tuple[float, float] = (0.05, 0.95),
+):
     mean = result.mean("scenario")  # dims: time, process
     q = result.quantile(list(band), dim="scenario")  # dims: quantile, time, process
     t = result.coords["time"].values
@@ -50,6 +55,14 @@ def plot_mean(result: SimulationResult, band: tuple[float, float] = (0.05, 0.95)
             name="mean",
             line={"color": "rgba(99,110,250)"},
         )
+        if theoretical_mean is not None:
+            fig.add_scatter(
+                x=t,
+                y=theoretical_mean,
+                mode="lines",
+                line={"dash": "dash", "color": "red"},
+                name="theoretical mean",
+            )
         fig.update_layout(
             title=f"Mean Simulated SDE Process for {name}",
             xaxis_title="time",

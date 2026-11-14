@@ -98,8 +98,8 @@ impl<'a> Filtration<'a> {
         time_steps: TimeStepContainer,
         initial_values: &HashMap<String, f64>,
         rng_draws: RngDraws,
-    ) -> Self {
-        let initial_time_step = *time_steps.get_by_index(0).unwrap();
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let initial_time_step = *time_steps.get_by_index(0).ok_or("no time steps")?;
         let process_universe_pointer = Arc::clone(&process_universe);
         for process in process_universe.processes() {
             let idx = process.index;
@@ -116,14 +116,11 @@ impl<'a> Filtration<'a> {
         for alg_process in process_universe_pointer.algebraic_processes() {
             let mut value = 0.0;
             for term in alg_process.terms.iter() {
-                value += term
-                    .coefficient
-                    .eval(&initial_time_step, &mut filtration)
-                    .unwrap();
+                value += term.coefficient.eval(&initial_time_step, &mut filtration)?;
             }
             filtration.set(&initial_time_step, alg_process, value);
         }
-        filtration
+        Ok(filtration)
     }
 
     #[inline]
