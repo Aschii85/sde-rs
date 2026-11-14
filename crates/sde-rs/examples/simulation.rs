@@ -10,15 +10,15 @@ use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // ────── configuration ──────
-    let initial_values = HashMap::from([("X1".to_string(), 100.0), ("X2".to_string(), 0.0)]);
+    let initial_values = HashMap::from([("X1".to_string(), 110.0)]);
 
     let processes_equations = vec![
-        "dX1 = ( sin(t) ) * dt + (0.01 * X1) * dW1 + (0.001 * X1) * dN1(0.5 * cos(t))".to_string(),
+        "dX1 = ( sin(t) ) * dt + (0.01 * X1) * dW1".to_string(),
         "X2 = max(X1 - 100.0, 0.0)".to_string(),
     ];
 
-    let scheme = IterationScheme::Euler; // other valid value: "runge-kutta"
-    let rng_method = RngMethod::Sobol; // other valid value: "sobol"
+    let scheme = IterationScheme::Roberts;
+    let rng_method = RngMethod::Sobol;
     let num_scenarios: u64 = 10_000;
 
     // build a uniformly spaced time vector, identical to what the Python

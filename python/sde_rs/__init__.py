@@ -18,7 +18,7 @@ def simulate(
     number_scenarios: int,
     initial_values: Mapping[str, float],
     *,
-    iteration_scheme: Literal["euler", "runge-kutta"] = "euler",
+    iteration_scheme: Literal["euler", "roberts"] = "euler",
     rng_method: Literal["pseudo", "sobol"] = "pseudo",
     rng_seed: int | None = None,
 ) -> SimulationResult:
@@ -51,8 +51,9 @@ def simulate(
             Defaults to "pseudo".
 
         scheme: The numerical integration scheme to use. Can be **"euler"** for the
-            Euler-Maruyama method or **"runge-kutta"** for a higher-order Runge-Kutta
-            method. Defaults to "euler".
+            Euler-Maruyama method or **"roberts"** for a strong order 1 Runge-Kutta
+            method due toe Roberts (https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_method_(SDE)). 
+            Defaults to "euler".
 
     Returns:
         A Polars DataFrame containing the simulated values. The DataFrame is

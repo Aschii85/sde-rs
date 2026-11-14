@@ -39,7 +39,7 @@ impl Simulation {
         let time_steps = TimeStepContainer::new(times);
         let mut sorted_scenarios = scenarios;
         sorted_scenarios.sort();
-        let iteration = match iteration_scheme {
+        let iteration_scheme = match iteration_scheme {
             IterationScheme::Euler => euler_iteration,
             IterationScheme::Roberts => roberts_iteration,
         };
@@ -54,7 +54,7 @@ impl Simulation {
             time_steps,
             scenarios: sorted_scenarios,
             initial_values,
-            iteration,
+            iteration: iteration_scheme,
             rng,
         }
     }
@@ -92,7 +92,7 @@ impl Simulation {
             self.time_steps.clone(),
             &self.initial_values,
             self.rng.draw(scenario),
-        );
+        )?;
         let mut current_time_step = self
             .time_steps
             .get_by_index(0)

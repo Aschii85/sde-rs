@@ -62,6 +62,7 @@ pub fn roberts_iteration(
     }
 
     // Compute X + K2 using the probed state X + K1
+    let mut x_next = vec![0.0; process_universe.num_processes()];
     for process in process_universe.levy_processes() {
         let x_plus_k1 = filtration.get(next_time_step, process);
         let mut x_plus_k2 = filtration.get(current_time_step, process);
@@ -79,7 +80,10 @@ pub fn roberts_iteration(
                     None => 1.0,
                 }
         }
-        filtration.set(next_time_step, process, (x_plus_k1 + x_plus_k2) / 2.0);
+        x_next[process.index] = (x_plus_k1 + x_plus_k2) / 2.0;
+    }
+    for process in process_universe.levy_processes() {
+        filtration.set(next_time_step, process, x_next[process.index]);
     }
 
     // Settle Algebraic processes

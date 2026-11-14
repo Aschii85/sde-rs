@@ -71,10 +71,6 @@ docs/_build/
 # Pyenv
 .python-version
 
-# Lock files
-Cargo.lock
-uv.lock
-
 # Performance profiling
 *.prof
 perf.data*
