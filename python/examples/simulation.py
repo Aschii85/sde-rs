@@ -4,7 +4,7 @@ from _util import plot_mean, plot_paths
 
 
 def main():
-    initial_values = {"X0": 0.5, "X1": 100.0, "X2": 0.0}
+    initial_values = {"X0": 0.5, "X1": 100.0}
     result = sde_rs.simulate(
         processes_equations=[
             "dX0 = ( 2.0 * (0.5 - X0) ) * dt + ( 0.1 ) * dN1(X0)",
