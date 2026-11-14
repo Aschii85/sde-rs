@@ -27,7 +27,8 @@ pub fn roberts_iteration(
 
     // 1. Generate the sk random variable (±1) for the stochastic correction
     let sk = {
-        let sk_seed = filtration.rng_seed() ^ (current_time_step.index as u64);
+        let sk_seed = (filtration.rng_seed() ^ (current_time_step.index as u64))
+            .wrapping_mul(current_time_step.index as u64);
         let mut rng = ChaCha20Rng::seed_from_u64(sk_seed);
         if rng.random_bool(0.5) { 1.0 } else { -1.0 }
     };
