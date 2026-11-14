@@ -86,9 +86,9 @@ impl PoissonJumpIncrementor {
 
 #[derive(Clone)]
 pub enum Incrementor {
-    Time(TimeIncrementor),
-    Wiener(WienerIncrementor),
-    PoissonJump(PoissonJumpIncrementor),
+    Time(Box<TimeIncrementor>),
+    Wiener(Box<WienerIncrementor>),
+    PoissonJump(Box<PoissonJumpIncrementor>),
 }
 
 impl Incrementor {

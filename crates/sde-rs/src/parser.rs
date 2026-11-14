@@ -23,7 +23,7 @@
 
 use crate::{
     func::Function,
-    increment::{Incrementor, PoissonJumpIncrementor, TimeIncrementor, WienerIncrementor},
+    increment::{Incrementor, PoissonJumpIncrementor, WienerIncrementor},
     process::{LagType, Process, ProcessLag, ProcessTerm, ProcessUniverse},
 };
 
@@ -216,15 +216,17 @@ impl IncrementorRegistry {
             IncKind::Time => Ok(self
                 .by_name
                 .entry("dt".to_string())
-                .or_insert_with(|| Incrementor::Time(TimeIncrementor::new()))
+                .or_insert_with(|| Incrementor::Time(Box::default()))
                 .clone()),
 
             IncKind::Wiener(name) => {
                 if let Some(existing) = self.by_name.get(name) {
                     return Ok(existing.clone());
                 }
-                let inc =
-                    Incrementor::Wiener(WienerIncrementor::new(self.next_index, name.to_string()));
+                let inc = Incrementor::Wiener(Box::new(WienerIncrementor::new(
+                    self.next_index,
+                    name.to_string(),
+                )));
                 self.next_index += 1;
                 self.by_name.insert(name.to_string(), inc.clone());
                 Ok(inc)
@@ -244,11 +246,11 @@ impl IncrementorRegistry {
                 let safe = rewrite_lags(intensity, lags)?;
                 let lambda = Function::new(&safe)
                     .map_err(|e| format!("invalid jump intensity '{intensity}': {e}"))?;
-                let inc = Incrementor::PoissonJump(PoissonJumpIncrementor::new(
+                let inc = Incrementor::PoissonJump(Box::new(PoissonJumpIncrementor::new(
                     self.next_index,
                     name.to_string(),
                     lambda,
-                ));
+                )));
                 self.next_index += 1;
                 self.by_name.insert(name.to_string(), inc.clone());
                 self.intensities.insert(name.to_string(), normalized);

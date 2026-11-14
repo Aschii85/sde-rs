@@ -11,18 +11,20 @@ use std::{collections::HashMap, fmt, sync::Arc};
 #[cfg(feature = "polars")]
 use polars::prelude::{IntoLazy, *};
 
+pub type IterationFn = fn(
+    &mut Filtration,
+    &ProcessUniverse,
+    &TimeStep,
+    &TimeStep,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
 #[derive(Clone)]
 pub struct Simulation {
     pub process_universe: Arc<ProcessUniverse>,
     pub time_steps: TimeStepContainer,
     pub scenarios: Vec<u64>,
     pub initial_values: HashMap<String, f64>,
-    iteration: fn(
-        &mut Filtration,
-        &ProcessUniverse,
-        &TimeStep,
-        &TimeStep,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>,
+    iteration: IterationFn,
     rng: SimulationRng,
 }
 

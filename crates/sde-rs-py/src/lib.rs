@@ -24,9 +24,16 @@ enum Outcome {
     Interrupted(PyErr),
 }
 
+// (scenario × time_step × process array, scenarios, time steps, process names in index order)
+type SimulateOutput<'py> = (Bound<'py, PyArray3<f64>>, Vec<u64>, Vec<f64>, Vec<String>);
+
 #[pyfunction]
 #[pyo3(name = "_simulate")]
 #[pyo3(signature = (processes_equations, time_steps, number_scenarios, initial_values, *, iteration_scheme="euler".to_string(), rng_method="pseudo".to_string(), rng_seed=None))]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "mirrors the Python keyword arguments"
+)]
 pub fn simulate_py<'py>(
     py: Python<'py>,
     processes_equations: Vec<String>,
@@ -36,12 +43,7 @@ pub fn simulate_py<'py>(
     iteration_scheme: String,
     rng_method: String,
     rng_seed: Option<u64>,
-) -> PyResult<(
-    Bound<'py, PyArray3<f64>>, // (scenario, time_step, process)
-    Vec<u64>,                  // scenarios
-    Vec<f64>,                  // time steps
-    Vec<String>,               // process names, in index order
-)> {
+) -> PyResult<SimulateOutput<'py>> {
     if number_scenarios <= 0 {
         return Err(PyValueError::new_err(
             "scenarios must be a positive integer",
