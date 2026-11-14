@@ -2978,7 +2978,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "sde-rs"
-version = "1.1.0"
+version = "2.0.0"
 dependencies = [
  "fasteval",
  "itertools 0.15.0",
@@ -2996,7 +2996,7 @@ dependencies = [
 
 [[package]]
 name = "sde-rs-py"
-version = "1.1.0"
+version = "2.0.0"
 dependencies = [
  "numpy",
  "ordered-float",
