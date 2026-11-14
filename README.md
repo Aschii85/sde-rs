@@ -10,9 +10,9 @@
 
 **Flexibility**: The library's design and modular architecture allows for the creation and integration of custom SDE models to suit specialized research or application needs.
 
-**Multiple Simulation Methods**: The library includes both *Monte Carlo* (MC) simulation, using pseudo-random numbers, and *Randomized Quasi-Monte Carlo* (RQMC) simulation, using Sobol sequences randomized by scrambling (random XOR) to provide an unbiased estimate with better sample coverage. 
+**Multiple Simulation Methods**: The library includes both *Monte Carlo* (MC) simulation, using pseudo-random numbers, and *Randomized Quasi-Monte Carlo* (RQMC) simulation, using Sobol sequences randomized by additive random shift mod 1 (Cranley-Patterson) to provide an unbiased estimate with better sample coverage. 
 
-**Multiple Integration Schemes**: The library also implements several integration schemes, including *Euler-Maruyama* and *Runge-Kutta first order*.
+**Multiple Integration Schemes**: The library also implements several integration schemes, including *Euler-Maruyama* and *Runge-Kutta strong order 1 (Roberts)*.
 
 **Python Integration**: A user-friendly and comprehensive Python interface via maturin allows you to utilize the Rust core without leaving your Python environment. This means data scientists and researchers can leverage the speed of a compiled language for the most demanding parts of their code, with bindings designed for seamless function calls and data exchange between the two languages.
 
@@ -27,7 +27,7 @@ Install the latest `sde-rs` version with:
 pip install sde-rs
 ```
 
-Requires Python version >=3.11,<3.15.
+Requires Python version >=3.10,<4.0.
 
 To build the package locally for, you'll first need to compile the Rust package for local development. The project is set up to use `maturin` and `uv`. This command builds the Rust library and creates a Python wheel that can be used directly in your environment.
 
@@ -38,7 +38,7 @@ uv build
 After the compilation is complete, you can run the example to see how the library works. This command uses `uv` to execute the Python example script.
 
 ```
-uv run examples/example.py
+uv run python/examples/simulation.py
 ```
 
 ### Rust

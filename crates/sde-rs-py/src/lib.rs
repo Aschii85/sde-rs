@@ -19,7 +19,7 @@ use std::{
 };
 
 enum Outcome {
-    Done(),
+    Done,
     SimError(String),
     Interrupted(PyErr),
 }
@@ -103,13 +103,13 @@ pub fn simulate_py<'py>(
             py.detach(|| std::thread::sleep(Duration::from_millis(20)));
         }
         match handle.join().expect("simulation thread panicked") {
-            Ok(_) => Outcome::Done(),
+            Ok(_) => Outcome::Done,
             Err(e) => Outcome::SimError(e),
         }
     });
 
     match outcome {
-        Outcome::Done() => {
+        Outcome::Done => {
             let scenarios = simulation_result.scenarios().clone();
             let times: Vec<f64> = simulation_result
                 .times()

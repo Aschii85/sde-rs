@@ -35,8 +35,9 @@ def simulate(
             `d{ProcessName} = ({expression})*d{Incrementor} + ...`.
             For example, a Geometric Brownian Motion can be represented as:
             `dX = (0.5 * X) * dt + (0.2 * X) * dW1`.
-            Supported incrementors are `dt` (for the drift term) and `dW` (for
-            Wiener processes, e.g., `dW1`, `dW2`).
+            Supported incrementors are `dt` (for the drift term), `dW` (for
+            Wiener processes, e.g., `dW1`, `dW2`) and dN (for poisson jump
+            processes, e.g., `dN1(0.5 + X1)`).
 
         time_steps: A sequence of time points at which to calculate the process
             values. Must be in increasing order.
@@ -52,15 +53,12 @@ def simulate(
 
         scheme: The numerical integration scheme to use. Can be **"euler"** for the
             Euler-Maruyama method or **"roberts"** for a strong order 1 Runge-Kutta
-            method due toe Roberts (https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_method_(SDE)). 
+            method due to Roberts (https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_method_(SDE)).
             Defaults to "euler".
 
     Returns:
-        A Polars DataFrame containing the simulated values. The DataFrame is
-        "long"/tidy: every row represents a single `(scenario, time, process)`
-        triple and the associated value.  In other words, the `scenario`
-        dimension has already been appended, which makes it easy to group or
-        aggregate across paths using standard Polars operations.
+        An xarray DataArray containing the simulated values. The dimensions are
+        `(scenario, time, process)`.
 
     Raises:
         ValueError: If the process equations are malformed or if initial values
