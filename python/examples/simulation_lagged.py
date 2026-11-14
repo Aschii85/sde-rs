@@ -9,7 +9,8 @@ def main():
     # Equations demonstrating lagged terms:
     # 1. X0 incorporates a mean-reverting drift based on its value 10 steps ago: X0[-1]
     # 2. X1 incorporates a moving-average style diffusion and drift driven by X1[-5] and X0[-2]
-    # 3. X2 running integral of X1
+    # 3. X2 is the running integral of X1: X2(t) = integral of X1 from 0 to t
+    # 4. X3 = max(X2/t - 100, 0) is the payoff of an arithmetic-average (Asian) call, strike 100
     processes_equations = [
         "dX0 = ( 2.0 * (0.5 - X0[-1]) ) * dt + ( 0.1 ) * dN1(X0)",
         "dX1 = ( 0.05 * X1 ) * dt + ( 0.2 * X1[-5] ) * dW1 + ( 0.5 ) * dN2(X0[-2])",
