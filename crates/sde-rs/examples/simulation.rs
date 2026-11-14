@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let simulation = Simulation::new(
         Arc::new(universe),
         time_steps,
-        (0..num_scenarios as u64).collect(),
+        (0..num_scenarios).collect(),
         initial_values,
         scheme,
         rng_method,
