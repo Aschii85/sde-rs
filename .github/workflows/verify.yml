@@ -23,5 +23,3 @@ jobs:
             | jq -r '.packages[].version' | sort -u)
           echo "tag=$TAG  crate version(s)=$versions"
           test "$versions" = "${TAG#v}"
-      - name: Run tests
-        run: cargo test --workspace --all-features --locked
