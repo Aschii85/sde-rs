@@ -61,12 +61,16 @@ pub fn simulate_py<'py>(
         match iteration_scheme.as_str() {
             "euler" => IterationScheme::Euler,
             "roberts" => IterationScheme::Roberts,
-            _ => unimplemented!("iteration_scheme must be 'euler' or 'roberts'"),
+            other => Err(PyValueError::new_err(format!(
+                "iteration_scheme must be 'euler' or 'roberts', got {other}"
+            )))?,
         },
         match rng_method.as_str() {
             "pseudo" => RngMethod::Pseudo,
             "sobol" => RngMethod::Sobol,
-            _ => unimplemented!("rng_method must be 'pseudo' or 'sobol'"),
+            other => Err(PyValueError::new_err(format!(
+                "rng_method must be 'pseudo' or 'sobol', got {other}"
+            )))?,
         },
         rng_seed,
     );
