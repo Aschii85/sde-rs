@@ -4,13 +4,16 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+
   linux:
+    needs: verify
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -33,6 +36,7 @@ jobs:
           path: dist
 
   musllinux:
+    needs: verify
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -55,6 +59,7 @@ jobs:
           path: dist
 
   windows:
+    needs: verify
     runs-on: windows-latest
     strategy:
       matrix:
@@ -73,6 +78,7 @@ jobs:
           path: dist
 
   macos:
+    needs: verify
     runs-on: macos-latest
     strategy:
       matrix:
@@ -91,6 +97,7 @@ jobs:
           path: dist
 
   sdist:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -120,12 +127,10 @@ jobs:
           pattern: wheels-*
           path: dist
           merge-multiple: true
-
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*"
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

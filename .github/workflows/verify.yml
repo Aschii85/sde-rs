@@ -1,0 +1,29 @@
+name: Verify release
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+
+      - name: Tag must match the version of every workspace crate
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          versions=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[].version' | sort -u)
+          echo "tag=$TAG  crate version(s)=$versions"
+          test "$versions" = "${TAG#v}"
+
+      - name: Run tests
+        run: cargo test --workspace --all-features --locked
