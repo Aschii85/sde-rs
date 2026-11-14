@@ -1,15 +1,13 @@
 use crate::{
-    filtration::{ScenarioFiltration, TimeStep},
+    filtration::{Filtration, TimeStep},
     process::ProcessUniverse,
-    rng::BaseRng,
 };
 
 pub fn euler_iteration(
-    filtration: &mut ScenarioFiltration,
+    filtration: &mut Filtration,
     process_universe: &ProcessUniverse,
     current_time_step: &TimeStep,
     next_time_step: &TimeStep,
-    rng: &mut dyn BaseRng,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // PASS 1: Compute all SDE-based (Levy) updates
     for process in process_universe.levy_processes() {
@@ -17,9 +15,7 @@ pub fn euler_iteration(
         for term in process.terms.iter() {
             let coeff = term.coefficient.eval(current_time_step, filtration)?;
             value += match &term.incrementor {
-                Some(inc) => {
-                    coeff * inc.sample(current_time_step, next_time_step, filtration, rng)?
-                }
+                Some(inc) => coeff * inc.sample(current_time_step, next_time_step, filtration)?,
                 None => coeff,
             }
         }
