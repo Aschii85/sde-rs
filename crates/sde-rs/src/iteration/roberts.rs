@@ -22,15 +22,8 @@ pub fn roberts_iteration(
     current_time_step: &TimeStep,
     next_time_step: &TimeStep,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let num_processes = process_universe.num_processes();
     let dt = next_time_step.value.into_inner() - current_time_step.value.into_inner();
     let sqrt_dt = dt.sqrt();
-
-    // Capture state at t_idx to avoid repetitive filtration lookups
-    let mut x_t = vec![0.0; num_processes];
-    for process in process_universe.levy_processes() {
-        x_t[process.index] = filtration.get(current_time_step, process);
-    }
 
     // 1. Generate the sk random variable (±1) for the stochastic correction
     let sk = {
@@ -39,11 +32,11 @@ pub fn roberts_iteration(
         if rng.random_bool(0.5) { 1.0 } else { -1.0 }
     };
 
-    // Compute k1
-    let mut k1 = vec![0.0; num_processes];
+    // Compute the probe value X + K1
     for process in process_universe.levy_processes() {
+        let mut x_plus_k1 = filtration.get(current_time_step, process);
         for term in process.terms.iter() {
-            k1[process.index] += term.coefficient.eval(current_time_step, filtration)?
+            x_plus_k1 += term.coefficient.eval(current_time_step, filtration)?
                 * match term.incrementor.as_ref() {
                     Some(inc) => match inc {
                         Incrementor::Time(_) => dt,
@@ -56,16 +49,9 @@ pub fn roberts_iteration(
                     None => 1.0,
                 }
         }
+        filtration.set(next_time_step, process, x_plus_k1);
     }
 
-    // Set a temporary "probed" state in the filtration for t+1
-    for process in process_universe.levy_processes() {
-        filtration.set(
-            next_time_step,
-            process,
-            x_t[process.index] + k1[process.index],
-        );
-    }
     // Settle Algebraic processes for the probe
     for process in process_universe.algebraic_processes() {
         let value = process.terms.iter().try_fold(0.0, |acc, t| {
@@ -75,11 +61,12 @@ pub fn roberts_iteration(
         filtration.set(next_time_step, process, value);
     }
 
-    // Compute k2 using the probed state
-    let mut k2 = vec![0.0; num_processes];
+    // Compute X + K2 using the probed state X + K1
     for process in process_universe.levy_processes() {
+        let x_plus_k1 = filtration.get(next_time_step, process);
+        let mut x_plus_k2 = filtration.get(current_time_step, process);
         for term in process.terms.iter() {
-            k2[process.index] += term.coefficient.eval(next_time_step, filtration)?
+            x_plus_k2 += term.coefficient.eval(next_time_step, filtration)?
                 * match term.incrementor.as_ref() {
                     Some(inc) => match inc {
                         Incrementor::Time(_) => dt,
@@ -92,15 +79,7 @@ pub fn roberts_iteration(
                     None => 1.0,
                 }
         }
-    }
-
-    // Settle Levy Processes
-    for process in process_universe.levy_processes() {
-        filtration.set(
-            next_time_step,
-            process,
-            x_t[process.index] + 0.5 * (k1[process.index] + k2[process.index]),
-        );
+        filtration.set(next_time_step, process, (x_plus_k1 + x_plus_k2) / 2.0);
     }
 
     // Settle Algebraic processes
