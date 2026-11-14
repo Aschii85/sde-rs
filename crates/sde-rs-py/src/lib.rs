@@ -60,8 +60,8 @@ pub fn simulate_py<'py>(
         initial_values,
         match iteration_scheme.as_str() {
             "euler" => IterationScheme::Euler,
-            "runge-kutta" => IterationScheme::RungeKutta,
-            _ => unimplemented!("iteration_scheme must be 'euler' or 'runge-kutta'"),
+            "roberts" => IterationScheme::Roberts,
+            _ => unimplemented!("iteration_scheme must be 'euler' or 'roberts'"),
         },
         match rng_method.as_str() {
             "pseudo" => RngMethod::Pseudo,
@@ -126,10 +126,8 @@ pub fn simulate_py<'py>(
                 process_names,
             ))
         }
-        Outcome::SimError(e) => {
-            return Err(PyRuntimeError::new_err(format!("Simulation failed: {}", e)));
-        }
-        Outcome::Interrupted(e) => return Err(e), // raises KeyboardInterrupt in Python
+        Outcome::SimError(e) => Err(PyRuntimeError::new_err(format!("Simulation failed: {}", e))),
+        Outcome::Interrupted(e) => Err(e), // raises KeyboardInterrupt in Python
     }
 }
 
